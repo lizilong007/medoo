@@ -2,6 +2,7 @@
   "name": "medoo",
   "version": "1.0.0",
   "description": "A simple tool for database access, work for node.",
+  "main": "./medoo.js",
   "babel": {
     "presets": [
       "es2017"
