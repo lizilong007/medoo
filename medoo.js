@@ -1,5 +1,5 @@
 
-var mysql = require('mysql2/promise');
+var SqlString = require('sqlstring');
 
 var is_array = function(obj) {
     return Object.prototype.toString.call(obj) === '[object Array]';
@@ -27,23 +27,9 @@ let object_keys = (obj) => {
 
 class Medoo {
 
-    constructor(option) {
+    constructor(dbDriver, option) {
         option = option || {};
-        if (!option.host) {
-            option.host = 'localhost';
-        }
-        if (!option.port) {
-            option.port = 3306;
-        }
-        if (!option.database) {
-            option.database = '';
-        }
-        if (!option.user) {
-            option.user = 'root';
-        }
-        if (!option.password) {
-            option.password = '';
-        }
+        this.db = dbDriver;
         this.option = option;
         this.prefix = option.prefix || '';
         this.debug_mode = option.debug_mode || false;
@@ -52,15 +38,15 @@ class Medoo {
 
     async setup(option = null) {
         option = option || this.option;
-        this.connection = await mysql.createConnection(option);
+        this.connection = await this.db.connect();
     }
 
     async release() {
-        await this.connection.end();
+        await this.connection.close();
     }
 
     escape(str) {
-        return this.connection.connection.escape(str);
+        return SqlString.escape(str);
     }
 
     table_escape(table) {
@@ -873,16 +859,16 @@ class Medoo {
 
     async action(actions) {
         if (Object.prototype.toString.call(actions) === '[object Function]') {
-            this.connection.connection.beginTransaction();
+            this.connection.begin();
 
             let result = await actions(this);
 
             if (result === false) {
-                this.connection.connection.rollback();
+                this.connection.rollback();
                 return false;
             }
             else {
-                this.connection.connection.commit();
+                this.connection.commit();
                 return true;
             }
         }
