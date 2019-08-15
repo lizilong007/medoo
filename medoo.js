@@ -859,16 +859,16 @@ class Medoo {
 
     async action(actions) {
         if (Object.prototype.toString.call(actions) === '[object Function]') {
-            this.connection.begin();
+            await this.connection.begin();
 
             let result = await actions(this);
 
             if (result === false) {
-                this.connection.rollback();
+                await this.connection.rollback();
                 return false;
             }
             else {
-                this.connection.commit();
+                await this.connection.commit();
                 return true;
             }
         }
