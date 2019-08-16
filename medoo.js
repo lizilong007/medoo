@@ -674,7 +674,7 @@ class Medoo {
             }
         }
         if (sqlStatements.length > 1) {
-            return await this.executeMany(sqlStatements)
+            return await this.connection.executeMany(sqlStatements)
         }
 
         return false
