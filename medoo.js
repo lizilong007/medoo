@@ -44,7 +44,7 @@ class Medoo {
     }
 
     table_escape(table) {
-        return '`' + this.prefix + table + '`';
+        return (this.prefix + table).split('.').map(t => '`' + t + '`').join('.');
     }
 
     column_escape(column) {
