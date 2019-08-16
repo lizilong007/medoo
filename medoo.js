@@ -547,7 +547,9 @@ class Medoo {
 
     async select(table, join, columns = null, where = null) {
         if (arguments.length < 2) return false;
+        return await this.query(this.select_context(table, join, columns, where));
 
+        /*
         let columns_real;
         let join_key = is_object(join) ? object_keys(join) : null;
         if (join_key && join_key[0] && join_key[0][0] === '[') {
@@ -601,10 +603,13 @@ class Medoo {
         });
 
         return stack;
+        */
     }
 
     async insert(table, datas) {
-        let lastId = [];
+        // let lastId = [];
+        let sqlStatements = [];
+        let result;
 
         // Check indexed or associative array
         if (!is_array(datas)) {
@@ -645,21 +650,40 @@ class Medoo {
                         break;
                 }
             }
-
+            sqlStatements.push('INSERT INTO ' + this.table_escape(table) + ' (' + columns.join(', ') + ') VALUES (' + values.join(', ') + ')');
+            /*
+            return await this.execute('INSERT INTO ' + this.table_escape(table) + ' (' + columns.join(', ') + ') VALUES (' + values.join(', ') + ')');
             let result = await this.execute('INSERT INTO ' + this.table_escape(table) + ' (' + columns.join(', ') + ') VALUES (' + values.join(', ') + ')');
             if (is_array(result) && result.length > 0 && result[0]) {
                 lastId.push(result[0].insertId);
             } else {
                 return false;
             }
+            */
         };
-        return lastId.length > 0 ? lastId[lastId.length - 1] : false;
+        
+        if (sqlStatements.length < 1) {
+            return false
+        }
+        if (sqlStatements.length == 1) {
+            result = await this.execute(sqlStatements[0])
+            if (result && result.insertId > 0) {
+                return result.insertId;
+            } else {
+                return false;
+            }
+        }
+        if (sqlStatements.length > 1) {
+            return await this.executeMany(sqlStatements)
+        }
+
+        return false
     }
 
     async delete(table, where) {
         let result = await this.execute('DELETE FROM ' + this.table_escape(table) + this.where_clause(where));
-        if (is_array(result) && result.length > 0 && result[0] && result[0].affectedRows > 0) {
-            return result[0].affectedRows;
+        if (result && result.rowsAffected > 0) {
+            return result.rowsAffected;
         } else {
             return false;
         }
@@ -706,8 +730,8 @@ class Medoo {
         }
 
         let result = await this.execute('UPDATE ' + this.table_escape(table) + ' SET ' + fields.join(', ') + this.where_clause(where));
-        if (is_array(result) && result.length > 0 && result[0] && result[0].affectedRows > 0) {
-            return result[0].affectedRows;
+        if (result && result.rowsAffected > 0) {
+            return result.rowsAffected;
         } else {
             return false;
         }
@@ -730,9 +754,9 @@ class Medoo {
                 columns["LIMIT"] = 1;
             }
         }
-        let rows = await this.select(table, join, columns, where);
-        if (rows.length && rows.length > 0) {
-            return rows[0];
+        let result = await this.select(table, join, columns, where);
+        if (result && result.rows.length > 0) {
+            return result.rows.item(0);
         } else {
             return false;
         }
@@ -743,9 +767,9 @@ class Medoo {
         if (!where) {
             where = 1;
         }
-        let [query, _] = await this.query('SELECT EXISTS(' + this.select_context(table, join, null, where, 1) + ') as count');
-        if (query && query.length > 0) {
-            return query[0]['count'] === 1;
+        let result = await this.query('SELECT EXISTS(' + this.select_context(table, join, null, where, 1) + ') as count');
+        if (result && result.rows.length > 0) {
+            return result.rows.item(0).count === 1;
         }
         else {
             return false;
@@ -760,54 +784,50 @@ class Medoo {
         if (!where) {
             where = join;
         }
-        let [query, _] = await this.query(this.select_context(table, join, column, where, 'COUNT'));
-        if (query && query.length > 0) {
-            return query[0]['tmp'];
+        let result = await this.query(this.select_context(table, join, column, where, 'COUNT'));
+        if (result && result.rows.length > 0) {
+            return +result.rows.item(0).tmp;
         } else {
             return 0;
         }
     }
 
     async max(table, join, column = null, where = null) {
-        let [query, _] = await this.query(this.select_context(table, join, column, where, 'MAX'));
+        let result = await this.query(this.select_context(table, join, column, where, 'MAX'));
 
-        if (query && query.length > 0) {
-            return +query[0]['tmp'];
-        }
-        else {
+        if (result && result.rows.length > 0) {
+            return +result.rows.item(0).tmp;
+        } else {
             return false;
         }
     }
 
     async min(table, join, column = null, where = null) {
-        let [query, _] = await this.query(this.select_context(table, join, column, where, 'MIN'));
+        let result = await this.query(this.select_context(table, join, column, where, 'MIN'));
 
-        if (query && query.length > 0) {
-            return +query[0]['tmp'];
-        }
-        else {
+        if (result && result.rows.length > 0) {
+            return +result.rows.item(0).tmp;
+        } else {
             return false;
         }
     }
 
     async avg(table, join, column = null, where = null) {
-        let [query, _] = await this.query(this.select_context(table, join, column, where, 'AVG'));
+        let result =  await this.query(this.select_context(table, join, column, where, 'AVG'));
 
-        if (query && query.length > 0) {
-            return +query[0]['tmp'];
-        }
-        else {
+        if (result && result.rows.length > 0) {
+            return +result.rows.item(0).tmp;
+        } else {
             return false;
         }
     }
 
     async sum(table, join, column = null, where = null) {
-        let [query, _] = await this.query(this.select_context(table, join, column, where, 'SUM'));
+        let result = await this.query(this.select_context(table, join, column, where, 'SUM'));
 
-        if (query && query.length > 0) {
-            return +query[0]['tmp'];
-        }
-        else {
+        if (result && result.rows.length > 0) {
+            return +result.rows.item(0).tmp;
+        } else {
             return false;
         }
     }
@@ -844,7 +864,7 @@ class Medoo {
             sql += ';';
         }
         let result = await this.execute(sql);
-        if (result && result[0]) {
+        if (result) {
             return true;
         } else {
             return false;
