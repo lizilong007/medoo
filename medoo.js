@@ -29,16 +29,10 @@ class Medoo {
 
     constructor(dbDriver, option) {
         option = option || {};
-        this.db = dbDriver;
         this.option = option;
         this.prefix = option.prefix || '';
         this.debug_mode = option.debug_mode || false;
-        //this.setup(option);
-    }
-
-    async setup(option = null) {
-        option = option || this.option;
-        this.connection = await this.db.connect();
+        this.connection = dbDriver;
     }
 
     async release() {
