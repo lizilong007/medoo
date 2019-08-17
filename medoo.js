@@ -755,8 +755,8 @@ class Medoo {
             }
         }
         let result = await this.select(table, join, columns, where);
-        if (result && result.rows.length > 0) {
-            return result.rows.item(0);
+        if (result && result.length > 0) {
+            return result[0];
         } else {
             return false;
         }
@@ -768,8 +768,8 @@ class Medoo {
             where = 1;
         }
         let result = await this.query('SELECT EXISTS(' + this.select_context(table, join, null, where, 1) + ') as count');
-        if (result && result.rows.length > 0) {
-            return result.rows.item(0).count === 1;
+        if (result && result.length > 0) {
+            return +result[0].tmp
         }
         else {
             return false;
@@ -785,8 +785,8 @@ class Medoo {
             where = join;
         }
         let result = await this.query(this.select_context(table, join, column, where, 'COUNT'));
-        if (result && result.rows.length > 0) {
-            return +result.rows.item(0).tmp;
+        if (result && result.length > 0) {
+            return +result[0].tmp
         } else {
             return 0;
         }
@@ -795,8 +795,8 @@ class Medoo {
     async max(table, join, column = null, where = null) {
         let result = await this.query(this.select_context(table, join, column, where, 'MAX'));
 
-        if (result && result.rows.length > 0) {
-            return +result.rows.item(0).tmp;
+        if (result && result.length > 0) {
+            return +result[0].tmp
         } else {
             return false;
         }
@@ -805,8 +805,8 @@ class Medoo {
     async min(table, join, column = null, where = null) {
         let result = await this.query(this.select_context(table, join, column, where, 'MIN'));
 
-        if (result && result.rows.length > 0) {
-            return +result.rows.item(0).tmp;
+        if (result && result.length > 0) {
+            return +result[0].tmp
         } else {
             return false;
         }
@@ -815,8 +815,8 @@ class Medoo {
     async avg(table, join, column = null, where = null) {
         let result =  await this.query(this.select_context(table, join, column, where, 'AVG'));
 
-        if (result && result.rows.length > 0) {
-            return +result.rows.item(0).tmp;
+        if (result && result.length > 0) {
+            return +result[0].tmp
         } else {
             return false;
         }
@@ -825,11 +825,16 @@ class Medoo {
     async sum(table, join, column = null, where = null) {
         let result = await this.query(this.select_context(table, join, column, where, 'SUM'));
 
-        if (result && result.rows.length > 0) {
-            return +result.rows.item(0).tmp;
+        if (result && result.length > 0) {
+            return +result[0].tmp
         } else {
             return false;
         }
+    }
+
+    async scalar(table, join, column = null, where = null) {
+        let result = await this.get(table, join, column, where)
+        return result[Object.keys(result)[0]]
     }
 
     async alter(table, action, column) {
