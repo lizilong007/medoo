@@ -69,9 +69,10 @@ class Medoo {
     }
 
     fn_escape(column, str) {
-        return (column.indexOf('#') === 0 && /^[A-Z0-9\_]*\([^)]*\)/.test(str)) ?
-            str :
-            this.escape(str);
+        if (is_string(str)) {
+            return `'${str}'`
+        }
+        return column.indexOf('#') === 0 && /^[A-Z0-9\_]*\([^)]*\)/.test(str) ? str : this.escape(str)
     }
 
     async query(sql) {
